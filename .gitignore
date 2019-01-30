@@ -69,3 +69,5 @@ yarn.lock
 # Build folder
 dist
 
+# WASM binaries for which we have the wast file
+transform-i64.wasm

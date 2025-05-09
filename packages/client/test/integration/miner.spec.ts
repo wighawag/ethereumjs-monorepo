@@ -1,9 +1,13 @@
-import { Hardfork, createCommonFromGethGenesis, parseGethGenesisState } from '@ethereumjs/common'
+import {
+  type GethGenesis,
+  Hardfork,
+  createCommonFromGethGenesis,
+  parseGethGenesisState,
+} from '@ethereumjs/common'
 import { Address, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import { Config } from '../../src/config.ts'
-import { getLogger } from '../../src/logging.ts'
 import { Event } from '../../src/types.ts'
 import { createInlineClient } from '../../src/util/index.ts'
 import { parseMultiaddrs } from '../../src/util/parse.ts'
@@ -12,7 +16,7 @@ import type { EthereumClient } from '../../src/index.ts'
 
 async function setupDevnet(prefundAddress: Address) {
   const addr = prefundAddress.toString().slice(2)
-  const defaultChainData = {
+  const defaultChainData: GethGenesis = {
     config: {
       chainId: 123456,
       homesteadBlock: 0,
@@ -37,6 +41,7 @@ async function setupDevnet(prefundAddress: Address) {
     gasUsed: '0x0',
     parentHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
     baseFeePerGas: 7,
+    alloc: {},
   }
   const extraData = concatBytes(new Uint8Array(32), prefundAddress.toBytes(), new Uint8Array(65))
 
@@ -69,7 +74,6 @@ async function minerSetup(): Promise<EthereumClient[]> {
     storageCache: 1000,
     mine: true,
     accounts,
-    logger: getLogger({ logLevel: 'debug' }),
   })
 
   const miner = await createInlineClient(config1, common, customGenesisState, '', true)
@@ -80,7 +84,6 @@ async function minerSetup(): Promise<EthereumClient[]> {
     storageCache: 1000,
     bootnodes: parseMultiaddrs(miner.config.server!.getRlpxInfo().enode as string),
     accounts,
-    logger: getLogger({ logLevel: 'info' }),
     port: 30304,
     mine: false,
   })
@@ -97,7 +100,11 @@ describe('should mine blocks while a peer stays connected to tip of chain', () =
     await new Promise((resolve) => {
       follower.config.events.on(Event.SYNC_SYNCHRONIZED, (chainHeight) => {
         if (chainHeight === targetHeight) {
-          assert.equal(follower.chain.blocks.height, targetHeight, 'synced blocks successfully')
+          assert.strictEqual(
+            follower.chain.blocks.height,
+            targetHeight,
+            'synced blocks successfully',
+          )
           resolve(undefined)
         }
       })
